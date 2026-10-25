@@ -109,7 +109,7 @@ You can also set these values with environment variables instead of the file: `E
 
 ### BPMN Toolkit
 
-Copyright © 2026 Dagitect. All rights reserved.
+Copyright © 2026 Dagitect SARL. All rights reserved.
 
 BPMN Toolkit is proprietary software. You may not copy, modify, distribute or resell it without written permission. To ask for permission, contact **mallala@dagitect.ch**.
 
