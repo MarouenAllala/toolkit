@@ -19,27 +19,106 @@ It runs on your own machine or server, as a single jar.
    java -version
    ```
 
-2. Put `bpmn-toolkit-version.jar` in a folder of its own. Your data and settings are stored in that folder. In the commands below, replace `version` with the version number in your jar's name.
+2. Put `bpmn-toolkit-version.jar` in a folder of its own, with a `config` folder beside it. Your data and settings are stored in that folder. In the commands below, replace `version` with the version number in your jar's name.
 
-3. Start it from that folder:
+   ```
+   my-folder/
+   ├── bpmn-toolkit-version.jar
+   └── config/
+       └── application.yml
+   ```
+
+3. Follow **Step 1** and **Step 2** of [Microsoft Entra ID](#microsoft-entra-id) below **before the first start**. The administrator password is read only once.
+
+4. Start it from that folder, as a service under your usual tool (systemd, Windows service):
 
    ```bash
    java -jar bpmn-toolkit-version.jar
    ```
 
-4. Open **http://localhost:8080** in your browser.
+5. Open your address in the browser and go through **Step 3**.
 
+**Your address**, written `<your-address>` in this guide, is the URL people type to open BPMN Toolkit. Use `http://localhost:8080` if it's only opened on the server itself. If people open it from other computers, use the `https://` address your IT provides, for example `https://bpmn.company.ch`. Microsoft sign-in does not accept `http://` for anything except localhost.
 
 ---
 
 ## Authentication
+
+### Microsoft Entra ID
+
+You need someone who can register applications in Microsoft Entra ID (Entra ID P1 to assign groups). The server and users' browsers must be able to reach `login.microsoftonline.com` on port 443.
+
+#### Step 1: Microsoft Entra admin center
+
+Your IT team does this. The secret stays with you.
+
+1. **App registrations → New registration.** Name: BPMN Toolkit. Account types: *Accounts in this organizational directory only*.
+2. **Redirect URI**, platform *Web*: `<your-address>/login/oauth2/code/entra`
+3. **Certificates & secrets → New client secret.** Copy its *Value* and note the expiry date.
+4. **App roles → Create app role.** Display name: BPMN Toolkit administrator. Value: `BpmnToolkit.Admin`. Allowed member types: Users/Groups.
+5. **Enterprise applications → BPMN Toolkit:**
+   - Properties: set **Assignment required** to Yes.
+   - Users and groups: assign the administrators with the role `BpmnToolkit.Admin`, and assign the other employees who will use the tool.
+
+If your tenant blocks user consent, also grant admin consent under **API permissions**.
+
+**Being an Entra administrator is not enough.** A Global Administrator, for example, is only a BPMN Toolkit administrator if assigned the `BpmnToolkit.Admin` role.
+
+Keep for Step 2: the **Directory (tenant) ID**, the **Application (client) ID** and the secret's **Value**.
+
+#### Step 2: `config/application.yml`
+
+Write this file **before the first start**:
+
+```yaml
+eventhub:
+  security:
+    jwt:
+      secret: <random key: openssl rand -base64 48>
+    bootstrap-admin:
+      password: <strong password for the local admin>
+    entra:
+      enabled: true
+      tenant-id: <Directory (tenant) ID>
+      client-id: <Application (client) ID>
+      client-secret: <secret Value>
+      admin-app-role: BpmnToolkit.Admin
+    sso:
+      enabled: true
+  public-url: <your-address>
+```
+
+Make this file readable by the service account only, since it holds the client secret.
+
+With `sso` enabled, BPMN Toolkit goes through Microsoft automatically, and someone already signed in to Microsoft reaches the linked page with no login screen. Remove the `sso` lines to keep the normal sign-in page instead.
+
+#### Step 3: Check before go-live
+
+- [ ] `<your-address>/api/config` shows `"entra":true` and `"sso":true`.
+- [ ] A holder of `BpmnToolkit.Admin` opens the address, goes through Microsoft automatically and sees the **Admin** menu.
+- [ ] An employee without the role does not see the **Admin** menu.
+- [ ] An employee not assigned to the app is stopped by Microsoft (error AADSTS50105).
+- [ ] The local `admin` signs in at `<your-address>/?signin` and chooses a new password.
+
+#### Who gets what
+
+| Who | Result |
+|---|---|
+| Has the `BpmnToolkit.Admin` role | Administrator from the first sign-in, with the Admin menu |
+| Role removed in Entra | Normal user from their next sign-in (an open session can last up to 12 hours) |
+| Assigned to the app and added to a product | Normal user, no Admin menu |
+| Assigned to the app, not added to a product yet | Refused until an administrator adds them: Admin → Products → a product → Members Permissions → Add Member |
+| Outside your tenant | Refused |
+| Local `admin` account | Administrator with its password at `/?signin`; keep it as the way in if Microsoft is unavailable |
 
 ### Username and password
 
 | | |
 |---|---|
 | Username | `admin` |
-| Password | contact **mallala@dagitect.ch** |
+| Password | the one you set in `bootstrap-admin.password` |
+
+With single sign-on on, the password form is at `<your-address>/?signin`.
 
 The first time you sign in, you'll be asked to choose a new password. It needs at least 12 characters, with at least one letter and one digit.
 
@@ -47,11 +126,12 @@ After 5 wrong passwords in a row, sign-in is locked for 15 minutes.
 
 The administrator adds other people from **Products → a product → Members Permissions → Add Member**.
 
-### Microsoft Entra ID
+To remove username and password sign-in, add this under `eventhub.security`. Nobody can then get in if Microsoft is down.
 
-You can also use **Sign in with Microsoft** with your work account. To get the configuration, contact **mallala@dagitect.ch**.
-
-Microsoft sign-in only works if an administrator has already added you as a member with the same email address.
+```yaml
+    password-sign-in:
+      enabled: false
+```
 
 ---
 
@@ -77,16 +157,7 @@ To back it up, stop the application, then copy the `.db` file.
      postgres:17
    ```
 
-2. In the folder that contains the jar, create `config/application.yml`:
-
-   ```
-   my-folder/
-   ├── bpmn-toolkit-version.jar
-   └── config/
-       └── application.yml
-   ```
-
-   with your database settings:
+2. Add your database settings to `config/application.yml`, under the same `eventhub:` as the settings above:
 
    ```yaml
    eventhub:
