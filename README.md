@@ -182,7 +182,7 @@ You can also set these values with environment variables instead of the file: `E
 
 Copyright © 2026 Dagitect SARL. All rights reserved.
 
-BPMN Toolkit is proprietary software. You may not copy, modify, distribute or resell it without written permission. To ask for permission, contact **mallala@dagitect.ch**.
+BPMN Toolkit is proprietary software. You may not copy, modify, distribute or resell it without written permission. To ask for permission, contact **contact@dagitect.ch**.
 
 ### Trademarks
 
