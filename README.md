@@ -1,50 +1,95 @@
+<div align="center">
+
 # BPMN Toolkit
 
-BPMN Toolkit is a software for designing and documenting business processes. You can:
+**Design, run and monitor your business processes on your own infrastructure.**
 
-- draw processes in BPMN, with subprocesses and called processes
-- model business rules as DMN decision tables
-- organise your work by product and application, with a version kept at every save
-- export a process as BPMN XML, Kogito BPMN, SVG or a PDF documentation
+![Version](https://img.shields.io/badge/version-1.3-2dbe96) ![Java](https://img.shields.io/badge/Java-21%2B-orange) ![Self-hosted](https://img.shields.io/badge/self--hosted-single%20jar-blue) ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-It runs on your own machine or server, as a single jar.
+![BPMN Toolkit demo](demo.gif)
+
+*A one-minute tour: design, deploy, test and monitor a sales process.*
+
+**For a demo, send an email to [contact@dagitect.ch](mailto:contact@dagitect.ch).**
+
+</div>
+
+<table>
+  <tr>
+    <td width="33%"><img src="screenshots/editor.png" alt="BPMN editor"><br><sub><b>Design</b> a process in BPMN, with DMN rules and subprocesses.</sub></td>
+    <td width="33%"><img src="screenshots/monitoring.png" alt="Monitoring"><br><sub><b>Monitor</b> every call, its duration and the health of each workflow.</sub></td>
+    <td width="33%"><img src="screenshots/topics.png" alt="Kafka topics"><br><sub><b>Connect</b> to Kafka: browse topics and read or send messages.</sub></td>
+  </tr>
+</table>
 
 ---
 
-## Installation
+## What is BPMN Toolkit?
 
-1. Install **Java 21** or later. Check it with:
+BPMN Toolkit is a single jar that turns business processes into running software. Your team draws a process in BPMN, writes its business rules as DMN decision tables, deploys it to your own Kubernetes cluster and watches it run. Nothing leaves your network.
 
-   ```bash
-   java -version
+## Contents
+
+[Key features](#key-features) · [Quick start](#quick-start) · [Sign-in](#sign-in) · [Database](#database) · [License](#license)
+
+---
+
+## Key features
+
+### 🎨 Design
+- **BPMN editor:** processes with subprocesses and called processes, and a version kept at every save.
+- **DMN decision tables:** business rules that analysts can read and edit.
+- **Products and applications:** organise work by team, with members and permissions.
+- **Export:** BPMN XML, Kogito BPMN, SVG and a PDF documentation.
+
+### 🚀 Run
+- **Deploy on Kubernetes:** one click turns a process into a workflow in your own cluster.
+- **Test in the editor:** start an instance, complete its tasks and read the result.
+- **Kafka:** manage topics, read and send messages, and pick topics on start and end events.
+
+### 📈 Monitor
+- **Every call, end to end:** the steps it took, where it waited and where it failed.
+- **People tasks:** who has a task waiting, and for how long.
+- **Email alerts:** limits per application or per process, per-team recipients and muting.
+- **Operator actions:** retry or skip a failed step, abort a call, send rejected messages again.
+
+### 🔐 Secure
+- **Sign-in:** Microsoft Entra ID or local accounts, with roles and per-product members.
+- **Your data:** SQLite or PostgreSQL, in your own environment.
+
+---
+
+## Quick start
+
+1. Install **Java 21** or later (`java -version`).
+2. Put `bpmn-toolkit-version.jar` in a folder of its own, with a `config/application.yml` beside it. Replace `version` with the number in your jar's name.
+   ```yaml
+   eventhub:
+     security:
+       jwt:
+         secret: <random key: openssl rand -base64 48>
+       bootstrap-admin:
+         password: <strong password for the local admin>
    ```
 
-2. Put `bpmn-toolkit-version.jar` in a folder of its own, with a `config` folder beside it. Your data and settings are stored in that folder. In the commands below, replace `version` with the version number in your jar's name.
-
-   ```
-   my-folder/
-   ├── bpmn-toolkit-version.jar
-   └── config/
-       └── application.yml
-   ```
-
-3. Follow **Step 1** and **Step 2** of [Microsoft Entra ID](#microsoft-entra-id) below **before the first start**. The administrator password is read only once.
-
-4. Start it from that folder, as a service under your usual tool (systemd, Windows service):
+3. Start it from that folder:
 
    ```bash
    java -jar bpmn-toolkit-version.jar
    ```
 
-5. Open your address in the browser and go through **Step 3**.
+4. Open `http://localhost:8080` and sign in as `admin` with the password you set. You choose a new password at the first sign-in.
 
-**Your address**, written `<your-address>` in this guide, is the URL people type to open BPMN Toolkit. Use `http://localhost:8080` if it's only opened on the server itself. If people open it from other computers, use the `https://` address your IT provides, for example `https://bpmn.company.ch`. Microsoft sign-in does not accept `http://` for anything except localhost.
+Your data is stored in `bpmn-toolkit.db` in that folder. To run it as a service for your team, or to sign in with Microsoft, read **Sign-in** below **before the first start**: the administrator password is read only once.
+
+**Your address**, written `<your-address>` below, is the URL people type to open BPMN Toolkit. Use `http://localhost:8080` if it's only opened on the server itself. If people open it from other computers, use the `https://` address your IT provides, for example `https://bpmn.company.ch`. Microsoft sign-in does not accept `http://` for anything except localhost.
 
 ---
 
-## Authentication
+## Sign-in
 
-### Microsoft Entra ID
+<details>
+<summary><b>Microsoft Entra ID</b></summary>
 
 You need someone who can register applications in Microsoft Entra ID (Entra ID P1 to assign groups). The server and users' browsers must be able to reach `login.microsoftonline.com` on port 443.
 
@@ -111,7 +156,11 @@ With `sso` enabled, BPMN Toolkit goes through Microsoft automatically, and someo
 | Outside your tenant | Refused |
 | Local `admin` account | Administrator with its password at `/?signin`; keep it as the way in if Microsoft is unavailable |
 
-### Username and password
+
+</details>
+
+<details>
+<summary><b>Username and password</b></summary>
 
 | | |
 |---|---|
@@ -133,17 +182,25 @@ To remove username and password sign-in, add this under `eventhub.security`. Nob
       enabled: false
 ```
 
+
+</details>
+
 ---
 
 ## Database
 
-### SQLite (default)
+<details>
+<summary><b>SQLite (default)</b></summary>
 
 Nothing to install or configure. On first start, BPMN Toolkit creates a file called `bpmn-toolkit.db` in the folder you started it from. That file holds all your data.
 
 To back it up, stop the application, then copy the `.db` file.
 
-### PostgreSQL
+
+</details>
+
+<details>
+<summary><b>PostgreSQL</b></summary>
 
 1. You need a PostgreSQL database and a user who can create tables in it. If you don't have one, you can start one with Docker:
 
@@ -176,6 +233,10 @@ To back it up, stop the application, then copy the `.db` file.
 
 You can also set these values with environment variables instead of the file: `EVENTHUB_DATABASE=postgresql`, `EVENTHUB_DB_HOST`, `EVENTHUB_DB_PORT`, `EVENTHUB_DB_NAME`, `EVENTHUB_DB_USERNAME` and `EVENTHUB_DB_PASSWORD`.
 
+</details>
+
+---
+
 ## License
 
 ### BPMN Toolkit
@@ -189,3 +250,4 @@ BPMN Toolkit is proprietary software. You may not copy, modify, distribute or re
 BPMN™, Business Process Model and Notation™, DMN™ and Decision Model and Notation™ are trademarks of Object Management Group, Inc. BPMN Toolkit is not affiliated with, endorsed by or certified by OMG.
 
 Microsoft and Microsoft Entra are trademarks of the Microsoft group of companies. PostgreSQL is a registered trademark of the PostgreSQL Community Association of Canada. Java is a registered trademark of Oracle and/or its affiliates. Docker is a registered trademark of Docker, Inc. Other names may be trademarks of their respective owners.
+
